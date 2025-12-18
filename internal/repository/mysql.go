@@ -3,10 +3,10 @@ package repository
 import (
 	"database/sql"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
-func DbConnection() (*sql.DB , error) {
-	dbUrl := "root:root@tcp(localhost:3306)/go_backend_dev?parseTime=true"
-	return sql.Open("mysql" , dbUrl);
+func DbConnection() (*sql.DB, error) {
+	dbUrl := "postgres://admin:admin@localhost:5432/go_backend_dev?sslmode=disable"
+	return sql.Open("postgres", dbUrl)
 }

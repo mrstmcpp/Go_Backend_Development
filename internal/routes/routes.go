@@ -13,6 +13,7 @@ func RegisterRoutes(app *fiber.App, queries *repository.Queries) {
 	users := app.Group("/users")
 	users.Post("/", userHandler.CreateUser)
 	users.Get("/:id", userHandler.GetUserById)
+	users.Get("/", userHandler.ListAllUsers)
 	users.Put("/:id", userHandler.UpdateUserById)
 	users.Delete("/:id", userHandler.DeleteUserById)
 }

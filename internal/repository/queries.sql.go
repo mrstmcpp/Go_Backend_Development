@@ -11,9 +11,21 @@ import (
 	"time"
 )
 
-const createUser = `-- name: CreateUser :execresult
+const countUsers = `-- name: CountUsers :one
+SELECT COUNT(*) AS count FROM users
+`
+
+func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUsers)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createUser = `-- name: CreateUser :one
 INSERT INTO users (name, dob)
-VALUES (?, ?)
+VALUES ($1, $2)
+RETURNING id
 `
 
 type CreateUserParams struct {
@@ -21,12 +33,15 @@ type CreateUserParams struct {
 	Dob  time.Time
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, createUser, arg.Name, arg.Dob)
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int32, error) {
+	row := q.db.QueryRowContext(ctx, createUser, arg.Name, arg.Dob)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
 }
 
 const deleteUser = `-- name: DeleteUser :execresult
-DELETE FROM users WHERE id = ?
+DELETE FROM users WHERE id = $1
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, id int32) (sql.Result, error) {
@@ -34,7 +49,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int32) (sql.Result, error) 
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, name, dob FROM users WHERE id = ?
+SELECT id, name, dob FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
@@ -42,6 +57,41 @@ func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
 	var i User
 	err := row.Scan(&i.ID, &i.Name, &i.Dob)
 	return i, err
+}
+
+const listAllUsersWithPagination = `-- name: ListAllUsersWithPagination :many
+SELECT id, name, dob 
+FROM users
+ORDER BY id
+LIMIT $1 OFFSET $2
+`
+
+type ListAllUsersWithPaginationParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) ListAllUsersWithPagination(ctx context.Context, arg ListAllUsersWithPaginationParams) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listAllUsersWithPagination, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(&i.ID, &i.Name, &i.Dob); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listUsers = `-- name: ListUsers :many
@@ -73,8 +123,8 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 
 const updateUser = `-- name: UpdateUser :execresult
 UPDATE users
-SET name = ?, dob = ?
-WHERE id = ?
+SET name = $1, dob = $2
+WHERE id = $3
 `
 
 type UpdateUserParams struct {

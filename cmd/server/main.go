@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	utils.InitValidator()
 	//creating fiber server
 	app := fiber.New()
 	//db connection
@@ -19,7 +20,6 @@ func main() {
 	}
 	defer db.Close()
 
-	utils.InitValidator()
 	queries := repository.New(db)
 
 	routes.RegisterRoutes(app, queries)

@@ -46,7 +46,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	}
 
 	//db save
-	result, err := h.queries.CreateUser(c.Context(), repository.CreateUserParams{
+	userId, err := h.queries.CreateUser(c.Context(), repository.CreateUserParams{
 		Name: req.Name,
 		Dob:  dob,
 	})
@@ -54,14 +54,6 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Fialed to create user.",
-		})
-	}
-
-	//getting id from mysql
-	userId, err := result.LastInsertId()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch the user id of recently created user.",
 		})
 	}
 
@@ -186,4 +178,49 @@ func (h *UserHandler) DeleteUserById(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (h *UserHandler) ListAllUsers(c *fiber.Ctx) error {
+	page, limit, offset := utils.GetPagination(c)
+
+	users, err := h.queries.ListAllUsersWithPagination(
+		c.Context(),
+		repository.ListAllUsersWithPaginationParams{
+			Limit:  int32(limit),
+			Offset: int32(offset),
+		},
+	)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch users.",
+		})
+	}
+
+	totalRecordsResult, err := h.queries.CountUsers(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch users count.",
+		})
+	}
+
+	responseUsers := make([]models.GetUserByIdResponseDTO, 0, len(users))
+
+	for _, user := range users {
+		responseUsers = append(responseUsers, models.GetUserByIdResponseDTO{
+			ID:   user.ID,
+			Name: user.Name,
+			DOB:  user.Dob.Format("2006-01-02"),
+			Age:  service.CalculateAge(user.Dob),
+		})
+	}
+
+	response := models.ListUsersResponseDTO{
+		Page:         page,
+		Limit:        limit,
+		TotalRecords: int(totalRecordsResult),
+		Users:        responseUsers,
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response)
 }

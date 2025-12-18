@@ -16,3 +16,10 @@ type UpdateUserByIdRequestDTO struct {
 	Name string `json:"name" validate:"min=2,max=50"`
 	DOB  string `json:"dob" validate:"datetime=2006-01-02"`
 }
+
+type ListUsersResponseDTO struct {
+	Page         int                      `json:"page"`
+	Limit        int                      `json:"limit"`
+	TotalRecords int                      `json:"total_records"`
+	Users        []GetUserByIdResponseDTO `json:"users"`
+}
