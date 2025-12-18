@@ -29,7 +29,7 @@ const deleteUser = `-- name: DeleteUser :exec
 DELETE FROM users WHERE id = ?
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id uint64) error {
+func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 	_, err := q.db.ExecContext(ctx, deleteUser, id)
 	return err
 }
@@ -38,7 +38,7 @@ const getUserById = `-- name: GetUserById :one
 SELECT id, name, dob FROM users WHERE id = ?
 `
 
-func (q *Queries) GetUserById(ctx context.Context, id uint64) (User, error) {
+func (q *Queries) GetUserById(ctx context.Context, id int32) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserById, id)
 	var i User
 	err := row.Scan(&i.ID, &i.Name, &i.Dob)
@@ -81,7 +81,7 @@ WHERE id = ?
 type UpdateUserParams struct {
 	Name string
 	Dob  time.Time
-	ID   uint64
+	ID   int32
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {

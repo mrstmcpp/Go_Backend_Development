@@ -9,7 +9,7 @@ import (
 )
 
 type User struct {
-	ID   uint64
+	ID   int32
 	Name string
 	Dob  time.Time
 }

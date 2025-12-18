@@ -1,17 +1,30 @@
 package main
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"go-backend-dev/internal/repository"
+	"go-backend-dev/internal/routes"
+	"log"
+
+	"github.com/gofiber/fiber/v2"
+)
 
 func main() {
+	//creating fiber server
 	app := fiber.New()
+
+	//db connection
+	db, err := repository.DbConnection()
+	if err != nil {
+		log.Fatal("failed to connect to db:", err)
+	}
+	defer db.Close()
+
+	queries := repository.New(db)
+
+	routes.RegisterRoutes(app, queries)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, World!")
-	})
-
-	app.Get("/:value", func(c *fiber.Ctx) error {
-		return c.SendString("value: " + c.Params("value"))
-		// => Get request with value: hello world
 	})
 
 	app.Listen(":3000")
