@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"go-backend-dev/internal/logger"
 	"go-backend-dev/internal/models"
 	"go-backend-dev/internal/repository"
 	"go-backend-dev/internal/service"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
 )
 
 type UserHandler struct {
@@ -57,6 +59,12 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
+	//logging action
+	logger.Log.Info("New user created",
+		zap.Int32("UserID", userId),
+		zap.String("Name", req.Name),
+	)
+
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"id":   userId,
 		"name": req.Name,
@@ -91,6 +99,12 @@ func (h *UserHandler) GetUserById(c *fiber.Ctx) error {
 		DOB:  user.Dob.Format("2006-01-02"),
 		Age:  age,
 	}
+
+	//loggin action
+	logger.Log.Info("User fetched",
+		zap.Int32("UserID", user.ID),
+		zap.String("Name", user.Name),
+	)
 
 	return c.Status(fiber.StatusOK).JSON(response)
 	// return c.JSON(fiber.Map{
@@ -148,6 +162,12 @@ func (h *UserHandler) UpdateUserById(c *fiber.Ctx) error {
 		})
 	}
 
+	//logging action
+	logger.Log.Info("User updated",
+		zap.Int32("UserID", userId),
+		zap.String("Name", req.Name),
+	)
+
 	return c.JSON(fiber.Map{
 		"id":   userId,
 		"name": req.Name,
@@ -176,6 +196,11 @@ func (h *UserHandler) DeleteUserById(c *fiber.Ctx) error {
 			"error": "user not found",
 		})
 	}
+
+	//logging action
+	logger.Log.Info("User deleted",
+		zap.Int32("UserID", userId),
+	)
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -221,6 +246,13 @@ func (h *UserHandler) ListAllUsers(c *fiber.Ctx) error {
 		TotalRecords: int(totalRecordsResult),
 		Users:        responseUsers,
 	}
+
+	//logging action
+	logger.Log.Info("Listed all users",
+		zap.Int("Page", page),
+		zap.Int("Limit", limit),
+		zap.Int("TotalRecords", int(totalRecordsResult)),
+	)
 
 	return c.Status(fiber.StatusOK).JSON(response)
 }
