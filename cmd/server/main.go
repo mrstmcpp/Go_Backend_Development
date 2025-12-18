@@ -3,6 +3,7 @@ package main
 import (
 	"go-backend-dev/internal/repository"
 	"go-backend-dev/internal/routes"
+	"go-backend-dev/internal/utils"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,7 +12,6 @@ import (
 func main() {
 	//creating fiber server
 	app := fiber.New()
-
 	//db connection
 	db, err := repository.DbConnection()
 	if err != nil {
@@ -19,6 +19,7 @@ func main() {
 	}
 	defer db.Close()
 
+	utils.InitValidator()
 	queries := repository.New(db)
 
 	routes.RegisterRoutes(app, queries)
