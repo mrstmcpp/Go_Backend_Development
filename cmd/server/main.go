@@ -8,8 +8,10 @@ import (
 	"go-backend-dev/internal/routes"
 	"go-backend-dev/internal/utils"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
@@ -39,6 +41,19 @@ func main() {
 	app.Use(middleware.RequestIdInjector())
 	app.Use(middleware.RequestLogger())
 
+	app.Use(limiter.New(limiter.Config{
+		Max:        50,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many requests. Please try again later.",
+			})
+		},
+	}))
+
 	//db connection
 	db, err := config.DbConnection()
 	if err != nil {
@@ -49,6 +64,9 @@ func main() {
 	//routes
 	queries := repository.New(db)
 	routes.RegisterRoutes(app, queries)
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello, World...")
+	})
 
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
@@ -60,7 +78,4 @@ func main() {
 		logger.Log.Fatal("failed to start server", zap.Error(err))
 	}
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World...")
-	})
 }
